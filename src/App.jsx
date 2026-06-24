@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import KtmQueue from './components/KtmQueue';
 import HospitalQueue from './components/HospitalQueue';
 import Login from './components/Login';
+import AdminConsole from './components/AdminConsole';
 import { dbService } from './dbService';
 
 export default function App() {
@@ -137,6 +138,22 @@ export default function App() {
             </svg>
             <span className="font-outfit">Layanan Antrean Klinik</span>
           </button>
+
+          {currentUser && currentUser.role === 'admin' && (
+            <button
+              onClick={() => handleNavClick('admin')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 ${
+                activeTab === 'admin'
+                  ? 'bg-[#fc7981]/20 text-[#000000] font-bold border border-[#fc7981]/40'
+                  : 'text-[#55534e] hover:bg-[#faf9f7] hover:text-[#000000]'
+              }`}
+            >
+              <svg className="w-5 h-5 text-[#55534e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              <span className="font-outfit">Admin Console</span>
+            </button>
+          )}
         </nav>
 
         {/* User Account / Auth Section in Sidebar */}
@@ -266,6 +283,7 @@ export default function App() {
 
           {activeTab === 'ktm' && <KtmQueue userRole={currentUser?.role || null} />}
           {activeTab === 'hospital' && <HospitalQueue userRole={currentUser?.role || null} />}
+          {activeTab === 'admin' && <AdminConsole />}
         </div>
       </main>
 

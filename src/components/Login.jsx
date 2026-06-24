@@ -7,11 +7,11 @@ export default function Login({ onLoginSuccess, onClose }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('baak_officer');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [infoMessage, setInfoMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,16 +22,30 @@ export default function Login({ onLoginSuccess, onClose }) {
 
     setLoading(true);
     setError('');
+    setInfoMessage('');
 
     try {
       if (isSignUp) {
         // Register flow
-        const session = await dbService.register(email, password, name, role);
-        onLoginSuccess(session);
+        const session = await dbService.register(email, password, name);
+        if (session.role === 'pending_approval') {
+          setInfoMessage('Akun berhasil dibuat! Silakan hubungi Super Admin untuk menyetujui akun dan memberikan hak akses peran.');
+          setIsSignUp(false);
+          setEmail('');
+          setPassword('');
+          setName('');
+        } else {
+          onLoginSuccess(session);
+        }
       } else {
         // Login flow
         const session = await dbService.login(email, password);
-        onLoginSuccess(session);
+        if (session.role === 'pending_approval') {
+          setError('Akses ditolak: Akun Anda sedang menunggu persetujuan Super Admin untuk alokasi peran.');
+          await dbService.logout();
+        } else {
+          onLoginSuccess(session);
+        }
       }
     } catch (err) {
       setError(err.message || 'Proses gagal. Silakan periksa kembali.');
@@ -44,6 +58,8 @@ export default function Login({ onLoginSuccess, onClose }) {
     setEmail(demoEmail);
     setPassword('admin123');
     setIsSignUp(false);
+    setError('');
+    setInfoMessage('');
   };
 
   return (
@@ -75,6 +91,12 @@ export default function Login({ onLoginSuccess, onClose }) {
         {error && (
           <div className="mb-4 p-3 bg-[#fc7981]/20 border border-[#fc7981]/40 rounded-xl text-xs text-black font-semibold text-center">
             {error}
+          </div>
+        )}
+
+        {infoMessage && (
+          <div className="mb-4 p-3 bg-[#84e7a5]/20 border border-[#078a52]/40 rounded-xl text-xs text-black font-semibold text-center">
+            {infoMessage}
           </div>
         )}
 
@@ -135,28 +157,12 @@ export default function Login({ onLoginSuccess, onClose }) {
             </div>
           </div>
 
-          {isSignUp && (
-            <div>
-              <label className="block text-[10px] font-bold text-[#55534e] mb-1">PILIH PERAN (ROLE)</label>
-              <select
-                value={role}
-                onChange={e => setRole(e.target.value)}
-                className="w-full px-3 py-2 clay-input text-xs bg-white"
-              >
-                <option value="baak_officer">Petugas BAAK (Layanan KTM)</option>
-                <option value="cashier">Kasir Klinik (Administrasi RS)</option>
-                <option value="doctor">Dokter Klinik (Pemeriksaan RS)</option>
-                <option value="admin">Super Admin (Akses Global)</option>
-              </select>
-            </div>
-          )}
-
           <button
             type="submit"
             disabled={loading}
             className="w-full clay-btn-playful clay-btn-playful-matcha text-xs py-2.5 font-bold disabled:opacity-50"
           >
-            {loading ? 'Memproses...' : isSignUp ? 'Daftar & Masuk' : 'Masuk Log Loket'}
+            {loading ? 'Memproses...' : isSignUp ? 'Daftar Akun' : 'Masuk Log Loket'}
           </button>
         </form>
 
@@ -166,6 +172,7 @@ export default function Login({ onLoginSuccess, onClose }) {
             onClick={() => {
               setIsSignUp(!isSignUp);
               setError('');
+              setInfoMessage('');
             }}
             className="text-xs text-[#43089f] font-semibold hover:underline"
           >
@@ -173,7 +180,7 @@ export default function Login({ onLoginSuccess, onClose }) {
           </button>
         </div>
 
-        {/* Demo Accounts Panel (Only show on Login mode for simplicity) */}
+        {/* Demo Accounts Panel */}
         {!isSignUp && (
           <div className="mt-6 border-t border-[#eee9df] pt-4">
             <div className="flex items-center justify-between mb-2">

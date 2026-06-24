@@ -137,15 +137,17 @@ export const dbService = {
         return {
           email: userCredential.user.email,
           role: userDoc.data().role,
-          name: userDoc.data().name || "Staff Member"
+          name: userDoc.data().name || "Staff Member",
+          uid: userCredential.user.uid
         };
       } else {
-        return { email: userCredential.user.email, role: "admin", name: "Administrator" };
+        return { email: userCredential.user.email, role: "pending_approval", name: "User Baru", uid: userCredential.user.uid };
       }
     }
   },
 
-  register: async (email, password, name, role) => {
+  register: async (email, password, name) => {
+    const defaultRole = "pending_approval";
     if (isDemoMode) {
       await new Promise(resolve => setTimeout(resolve, 800));
       const users = getMockUsers();
@@ -153,26 +155,26 @@ export const dbService = {
       if (users[lowerEmail]) {
         throw new Error("Email sudah terdaftar.");
       }
-      users[lowerEmail] = { role, name, password };
+      users[lowerEmail] = { role: defaultRole, name, password };
       localStorage.setItem("mock_users", JSON.stringify(users));
       
-      // Auto login after signup
-      const session = { email, role, name };
+      const session = { email, role: defaultRole, name };
       localStorage.setItem("mock_session", JSON.stringify(session));
       window.dispatchEvent(new Event('auth-update'));
       return session;
     } else {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Create user role doc in Firestore
+      // Create user role doc in Firestore as pending_approval
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
         name,
-        role
+        role: defaultRole
       });
       return {
         email,
         name,
-        role
+        role: defaultRole,
+        uid: userCredential.user.uid
       };
     }
   },
@@ -203,14 +205,67 @@ export const dbService = {
             callback({
               email: user.email,
               role: userDoc.data().role,
-              name: userDoc.data().name || "Staff Member"
+              name: userDoc.data().name || "Staff Member",
+              uid: user.uid
             });
           } else {
-            callback({ email: user.email, role: "admin", name: "Administrator" });
+            callback({ email: user.email, role: "pending_approval", name: "User Baru", uid: user.uid });
           }
         } else {
           callback(null);
         }
+      });
+    }
+  },
+
+  // Get all users in the system (Admin only)
+  getAllUsers: async () => {
+    if (isDemoMode) {
+      const users = getMockUsers();
+      return Object.keys(users).map(email => ({
+        id: email, // Use email as unique ID for mock
+        email,
+        name: users[email].name,
+        role: users[email].role
+      }));
+    } else {
+      const q = collection(db, "users");
+      const querySnapshot = await getDocs(q);
+      const list = [];
+      querySnapshot.forEach((doc) => {
+        list.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      return list;
+    }
+  },
+
+  // Update user role (Admin only)
+  updateUserRole: async (userId, newRole) => {
+    if (isDemoMode) {
+      const users = getMockUsers();
+      if (users[userId]) {
+        users[userId].role = newRole;
+        localStorage.setItem("mock_users", JSON.stringify(users));
+        
+        // If the updated user is current user, update current session role too
+        const session = localStorage.getItem("mock_session");
+        if (session) {
+          const parsed = JSON.parse(session);
+          if (parsed.email === userId) {
+            parsed.role = newRole;
+            localStorage.setItem("mock_session", JSON.stringify(parsed));
+            window.dispatchEvent(new Event('auth-update'));
+          }
+        }
+        window.dispatchEvent(new Event('storage-update'));
+      }
+    } else {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        role: newRole
       });
     }
   }

@@ -29,10 +29,12 @@ export default function HospitalQueue({ userRole }) {
   const [logs, setLogs] = useState([]);
   const [toast, setToast] = useState(null);
 
-  // Enforce role actions
+  // Enforce role actions & view permissions
   const isCashier = userRole === 'cashier' || userRole === 'admin';
   const isDoctor = userRole === 'doctor' || userRole === 'admin';
   const isSuperAdmin = userRole === 'admin';
+  // Staff who are allowed to see full names & medical complaints
+  const isStaff = userRole === 'cashier' || userRole === 'doctor' || userRole === 'admin';
 
   // Listen to the hospital queue changes in real-time
   useEffect(() => {
@@ -55,6 +57,16 @@ export default function HospitalQueue({ userRole }) {
   const addLog = (message, type = 'info') => {
     const time = new Date().toLocaleTimeString();
     setLogs(prev => [{ time, message, type }, ...prev].slice(0, 10));
+  };
+
+  // Helper to mask names for visitor privacy protection
+  const maskName = (fullname) => {
+    if (!fullname) return "";
+    const parts = fullname.trim().split(" ");
+    return parts.map(part => {
+      if (part.length <= 2) return part;
+      return part[0] + part[1] + "*".repeat(part.length - 2);
+    }).join(" ");
   };
 
   // Helper to update all queue variables in Firestore
@@ -81,7 +93,7 @@ export default function HospitalQueue({ userRole }) {
     
     await syncWithDatabase(updatedList, sedangDiperiksa, noRegCounter + 1, nomerAntreSistem);
 
-    addLog(`[SUKSES] ${namaInput} terdaftar dengan ID ${regId}. Menunggu pembayaran kasir.`, 'success');
+    addLog(`Nomor antrean berhasil diambil oleh pasien.`, 'success');
     showToast(`Registrasi sukses! ID: ${regId}`, 'success');
 
     setNamaInput('');
@@ -104,7 +116,7 @@ export default function HospitalQueue({ userRole }) {
 
     const targetPasien = pasienList[idx];
     if (targetPasien.statusBayar === 'SUDAH') {
-      showToast(`Pasien ${targetPasien.nama} sudah melunasi pembayaran.`, 'warning');
+      showToast(`Pasien sudah melunasi pembayaran.`, 'warning');
       return;
     }
 
@@ -114,7 +126,7 @@ export default function HospitalQueue({ userRole }) {
     
     await syncWithDatabase(updatedList, sedangDiperiksa, noRegCounter, nomerAntreSistem + 1);
 
-    addLog(`[SUKSES LUNAS] ID ${targetId} (${targetPasien.nama}) lunas. Nomor Antrean Dokter: ${nomerAntreSistem}`, 'success');
+    addLog(`[KASIR] Pembayaran ID ${targetId} lunas. Nomor Antrean Dokter diterbitkan.`, 'success');
     showToast(`Pembayaran sukses! Nomor Dokter: ${nomerAntreSistem}`, 'success');
 
     setIdBayarInput('');
@@ -126,7 +138,7 @@ export default function HospitalQueue({ userRole }) {
     
     let activeCheckup = sedangDiperiksa;
     if (activeCheckup) {
-      addLog(`== [SISTEM] PEMERIKSAAN SELESAI == Pasien ${activeCheckup.nama} selesai diperiksa.`, 'info');
+      addLog(`== [DOKTER] PEMERIKSAAN SELESAI == Sesi periksa pasien telah selesai.`, 'info');
       activeCheckup = null;
     }
 
@@ -140,8 +152,8 @@ export default function HospitalQueue({ userRole }) {
 
     // Validasi status bayar (Auto-skip logic)
     if (frontPasien.statusBayar === 'BELUM') {
-      showToast(`[WARNING] Pasien ${frontPasien.nama} belum melunasi administrasi!`, 'error');
-      addLog(`[WARNING] Panggilan ditolak. ${frontPasien.nama} digeser ke belakang karena belum bayar.`, 'warning');
+      showToast(`[WARNING] Pasien belum melunasi administrasi!`, 'error');
+      addLog(`[WARNING] Panggilan ditolak. Antrean pasien digeser ke belakang karena belum bayar.`, 'warning');
       
       if (pasienList.length > 1) {
         const shiftedList = [...pasienList.slice(1), frontPasien];
@@ -151,7 +163,7 @@ export default function HospitalQueue({ userRole }) {
     }
 
     // Call success
-    addLog(`Panggilan dokter: ${frontPasien.nama} (No. Antrean: ${frontPasien.nomerAntri}) silakan masuk ke Ruang Dokter.`, 'info');
+    addLog(`Panggilan dokter: Nomor Antrean ${frontPasien.nomerAntri} silakan masuk ke Ruang Dokter.`, 'info');
     
     const remainingList = pasienList.slice(1);
     await syncWithDatabase(remainingList, frontPasien, noRegCounter, nomerAntreSistem);
@@ -258,7 +270,7 @@ export default function HospitalQueue({ userRole }) {
           <div className="clay-card p-5">
             <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-[#000000] font-outfit">
               <svg className="w-5 h-5 text-[#078a52]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5m4 0H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
               </svg>
               Registrasi Pasien Baru
             </h3>
@@ -280,7 +292,7 @@ export default function HospitalQueue({ userRole }) {
                   onChange={e => setKeluhanInput(e.target.value)}
                   rows={2}
                   className="w-full px-3 py-2 clay-input text-xs resize-none"
-                  placeholder="Keluhan pasien..."
+                  placeholder="Keluhan medis..."
                 />
               </div>
               <button
@@ -363,10 +375,12 @@ export default function HospitalQueue({ userRole }) {
                 ) : (
                   <>
                     <p className="text-[#078a52] font-extrabold font-outfit">Data Ditemukan!</p>
-                    <p><span className="text-[#55534e] font-bold">Nama:</span> {searchResult.pasien.nama}</p>
+                    <p><span className="text-[#55534e] font-bold">Nama:</span> {isStaff ? searchResult.pasien.nama : maskName(searchResult.pasien.nama)}</p>
                     <p><span className="text-[#55534e] font-bold">ID Reg:</span> {searchResult.pasien.id}</p>
                     <p><span className="text-[#55534e] font-bold">Antrean:</span> {searchResult.pasien.statusBayar === 'SUDAH' ? searchResult.pasien.nomerAntri : 'Belum Bayar (Ke Kasir)'}</p>
-                    <p><span className="text-[#55534e] font-bold">Keluhan:</span> {searchResult.pasien.keluhan}</p>
+                    {isStaff && (
+                      <p><span className="text-[#55534e] font-bold">Keluhan:</span> {searchResult.pasien.keluhan}</p>
+                    )}
                     <p className="text-[10px] bg-[#eee9df] px-2 py-0.5 rounded inline-block font-bold text-[#55534e] mt-1">{searchResult.lokasi}</p>
                   </>
                 )}
@@ -396,8 +410,13 @@ export default function HospitalQueue({ userRole }) {
                   <span className="text-[9px] text-[#078a52] font-bold uppercase tracking-wider block mb-0.5 font-mono-clay">Ruang Periksa Dokter</span>
                   {sedangDiperiksa ? (
                     <div>
-                      <span className="text-md font-bold text-black font-outfit block">{sedangDiperiksa.nama}</span>
+                      <span className="text-md font-bold text-black font-outfit block">
+                        {isStaff ? sedangDiperiksa.nama : maskName(sedangDiperiksa.nama)}
+                      </span>
                       <span className="text-xs text-[#55534e]">ID: {sedangDiperiksa.id} &bull; No. Antrean Dokter: {sedangDiperiksa.nomerAntri}</span>
+                      {isStaff && (
+                        <p className="text-[11px] text-[#55534e] mt-1 font-semibold">Keluhan: {sedangDiperiksa.keluhan}</p>
+                      )}
                     </div>
                   ) : (
                     <span className="text-xs text-[#9f9b93] font-medium">Tidak ada pasien di dalam ruang dokter.</span>
@@ -411,7 +430,7 @@ export default function HospitalQueue({ userRole }) {
                     Panggil Dokter
                   </button>
                 ) : (
-                  <span className="text-[10px] text-[#55534e] bg-[#eee9df] px-2.5 py-1 rounded-full font-bold">
+                  <span className="text-[10px] text-[#55534e] bg-[#eee9df] px-2.5 py-1 rounded-full font-bold font-outfit">
                     Panggilan Dokter (Terkunci)
                   </span>
                 )}
@@ -462,8 +481,12 @@ export default function HospitalQueue({ userRole }) {
                             {pasien.statusBayar}
                           </span>
                         </div>
-                        <div className="text-xs font-bold text-black truncate">{pasien.nama}</div>
-                        <div className="text-[10px] text-[#55534e] mt-1 truncate">Klh: {pasien.keluhan}</div>
+                        <div className="text-xs font-bold text-black truncate">
+                          {isStaff ? pasien.nama : maskName(pasien.nama)}
+                        </div>
+                        {isStaff && (
+                          <div className="text-[10px] text-[#55534e] mt-1 truncate">Klh: {pasien.keluhan}</div>
+                        )}
                         <div className="text-[8px] text-[#9f9b93] font-mono-clay mt-2 pt-1 border-t border-[#dad4c8]/50 flex justify-between">
                           <span>Next:</span>
                           <span className="font-bold text-[#000000]">{idx === pasienList.length - 1 ? 'NULL' : pasienList[idx+1].id}</span>

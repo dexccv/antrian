@@ -47,6 +47,16 @@ export default function KtmQueue({ userRole }) {
     setLogAktivitas(prev => [{ time, message, type }, ...prev].slice(0, 10));
   };
 
+  // Helper to mask names for privacy protection
+  const maskName = (fullname) => {
+    if (!fullname) return "";
+    const parts = fullname.trim().split(" ");
+    return parts.map(part => {
+      if (part.length <= 2) return part;
+      return part[0] + part[1] + "*".repeat(part.length - 2);
+    }).join(" ");
+  };
+
   const isFull = count === MAX_ANTREAN;
   const isEmpty = count === 0;
 
@@ -76,8 +86,8 @@ export default function KtmQueue({ userRole }) {
       count: count + 1
     });
 
-    addLog(`Mahasiswa ${nama} (NIM: ${nim}) berhasil mengambil nomor antrean.`, 'success');
-    showToast(`Antrean berhasil dibuat untuk ${nama}`, 'success');
+    addLog(`Nomor antrean berhasil diambil oleh mahasiswa.`, 'success');
+    showToast(`Antrean berhasil dibuat!`, 'success');
 
     // Reset form
     setNama('');
@@ -94,7 +104,7 @@ export default function KtmQueue({ userRole }) {
     }
     const mhs = data[frontIdx];
     setPanggilanAktif(mhs);
-    addLog(`Memanggil: ${mhs.nama} ke loket BAAK.`, 'info');
+    addLog(`Memanggil mahasiswa ke loket BAAK.`, 'info');
   };
 
   // Dequeue - Sudah Ambil KTM (Staff / Admin Only)
@@ -112,8 +122,8 @@ export default function KtmQueue({ userRole }) {
       count: count - 1
     });
     
-    addLog(`[SUKSES] ${mhs.nama} telah selesai mengambil KTM.`, 'success');
-    showToast(`${mhs.nama} selesai mengambil KTM.`, 'success');
+    addLog(`[SUKSES] Mahasiswa telah selesai mengambil KTM.`, 'success');
+    showToast(`Pelayanan loket KTM selesai.`, 'success');
     setPanggilanAktif(null);
   };
 
@@ -123,7 +133,7 @@ export default function KtmQueue({ userRole }) {
     
     const mhs = panggilanAktif;
     if (count === 1) {
-      showToast(`Hanya ada 1 orang di antrean. Posisi ${mhs.nama} tetap di depan.`, 'info');
+      showToast(`Hanya ada 1 orang di antrean. Posisi tetap di depan.`, 'info');
       return;
     }
 
@@ -140,8 +150,8 @@ export default function KtmQueue({ userRole }) {
       count
     });
     
-    addLog(`[INFO] ${mhs.nama} belum hadir. Antrean dipindahkan ke paling belakang.`, 'warning');
-    showToast(`${mhs.nama} digeser ke paling belakang.`, 'info');
+    addLog(`[INFO] Mahasiswa belum hadir. Antrean dipindahkan ke paling belakang.`, 'warning');
+    showToast(`Antrean digeser ke paling belakang.`, 'info');
     setPanggilanAktif(null);
   };
 
@@ -288,7 +298,7 @@ export default function KtmQueue({ userRole }) {
             </form>
           </div>
 
-          {/* Panel Pemanggilan (Visible only to BAAK Officers or Admins) */}
+          {/* Panel Pemanggilan */}
           <div className="clay-card p-5">
             <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-[#000000] font-outfit">
               <svg className="w-5 h-5 text-[#078a52]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,7 +309,7 @@ export default function KtmQueue({ userRole }) {
             {!hasAccess ? (
               <div className="text-center py-6">
                 <p className="text-xs text-[#55534e] font-semibold bg-[#eee9df] p-3 rounded-xl border border-[#dad4c8]">
-                  Fitur ini dikunci. Silakan masuk sebagai **Petugas BAAK** atau **Admin** untuk mengoperasikan panggilan loket.
+                  Fitur ini dikunci. Silakan masuk sebagai **Petugas BAAK** atau **Admin** untuk memproses panggilan loket.
                 </p>
               </div>
             ) : panggilanAktif ? (
@@ -405,8 +415,8 @@ export default function KtmQueue({ userRole }) {
                       {/* Tooltip on active */}
                       {slot.isActive && (
                         <div className="absolute opacity-0 hover:opacity-100 bg-[#000000] text-white text-[9px] p-2 rounded-lg pointer-events-none whitespace-nowrap z-30 transition-opacity -translate-y-10 shadow-lg">
-                          <p className="font-bold">{slot.item.nama}</p>
-                          <p>NIM: {slot.item.nim}</p>
+                          <p className="font-bold">{hasAccess ? slot.item.nama : maskName(slot.item.nama)}</p>
+                          <p>NIM: {hasAccess ? slot.item.nim : "****" + String(slot.item.nim).slice(-4)}</p>
                           <p>{slot.item.prodi}</p>
                         </div>
                       )}
@@ -440,8 +450,8 @@ export default function KtmQueue({ userRole }) {
                           {idx + 1}
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-black">{item.nama}</div>
-                          <div className="text-[10px] text-[#55534e]">NIM: {item.nim} &bull; {item.prodi}</div>
+                          <div className="text-xs font-bold text-black">{hasAccess ? item.nama : maskName(item.nama)}</div>
+                          <div className="text-[10px] text-[#55534e]">NIM: {hasAccess ? item.nim : "****" + String(item.nim).slice(-4)} &bull; {item.prodi}</div>
                         </div>
                       </div>
                       <div className="text-[9px] bg-white border border-[#dad4c8] px-2 py-0.5 rounded font-mono-clay text-[#55534e] font-bold">
