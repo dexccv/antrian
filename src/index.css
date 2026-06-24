@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --clay-bg: #faf9f7;
+  --clay-black: #000000;
+  --clay-white: #ffffff;
+  --oat-border: #dad4c8;
+  --oat-light: #eee9df;
+  
+  /* Swatches */
+  --matcha-300: #84e7a5;
+  --matcha-600: #078a52;
+  --matcha-800: #02492a;
+  
+  --slushie-500: #3bd3fd;
+  --slushie-800: #0089ad;
+  
+  --lemon-400: #f8cc65;
+  --lemon-500: #fbbd41;
+  --lemon-700: #d08a11;
+  
+  --ube-300: #c1b0ff;
+  --ube-800: #43089f;
+  
+  --pomegranate-400: #fc7981;
+  --blueberry-800: #01418d;
+
+  --clay-shadow: rgba(0,0,0,0.1) 0px 1px 1px, rgba(0,0,0,0.04) 0px -1px 1px inset, rgba(0,0,0,0.05) 0px -0.5px 1px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--clay-bg);
+  color: var(--clay-black);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Clay Card Style */
+.clay-card {
+  background-color: var(--clay-white);
+  border: 1px solid var(--oat-border);
+  box-shadow: var(--clay-shadow);
+  border-radius: 24px;
+}
+
+.clay-card-dashed {
+  background-color: var(--clay-white);
+  border: 1px dashed var(--oat-border);
+  box-shadow: var(--clay-shadow);
+  border-radius: 24px;
+}
+
+/* Playful Hover Buttons */
+.clay-btn-playful {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--clay-white);
+  color: var(--clay-black);
+  border: 1px solid var(--clay-black);
+  border-radius: 9999px;
+  padding: 8px 20px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+.clay-btn-playful:hover {
+  transform: translateY(-4px) rotate(-3deg);
+  box-shadow: -6px 6px 0px var(--clay-black);
+  background-color: var(--lemon-500);
+}
+
+.clay-btn-playful-matcha:hover {
+  transform: translateY(-4px) rotate(-3deg);
+  box-shadow: -6px 6px 0px var(--clay-black);
+  background-color: var(--matcha-300);
+}
+
+.clay-btn-playful-slushie:hover {
+  transform: translateY(-4px) rotate(3deg);
+  box-shadow: 6px 6px 0px var(--clay-black);
+  background-color: var(--slushie-500);
+}
+
+.clay-btn-playful-pomegranate:hover {
+  transform: translateY(-4px) rotate(-3deg);
+  box-shadow: -6px 6px 0px var(--clay-black);
+  background-color: var(--pomegranate-400);
+}
+
+.clay-btn-playful-ube:hover {
+  transform: translateY(-4px) rotate(3deg);
+  box-shadow: 6px 6px 0px var(--clay-black);
+  background-color: var(--ube-300);
+}
+
+/* Input Fields styling */
+.clay-input {
+  background-color: var(--clay-white);
+  border: 1px solid var(--oat-border);
+  border-radius: 8px;
+  color: var(--clay-black);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clay-input:focus {
+  outline: none;
+  border-color: var(--clay-black);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Space Mono elements */
+.font-mono-clay {
+  font-family: 'Space Mono', monospace;
+}
+
+/* Custom scrollbars matching the theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--clay-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--oat-border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c2b9a7;
+}
